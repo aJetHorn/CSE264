@@ -1,0 +1,75 @@
+/*TJ O'Hearn CSE 264 Stylesheet*/
+
+body{
+    padding: 35px;
+    background-color: #d35400;
+}
+#buttons{
+    margin-top: 15px;
+    display: inline-block;
+}
+#calculator{
+    padding: 5px;
+    height: 560px;
+    width: 520px;
+    margin: auto auto;
+    background-color: #FFF;
+    border-radius: 6px;
+    font-family: "Lucida Console", Monaco, monospace;
+    border: 1px solid #999;
+}
+
+.calcButton{
+    padding: 5px;
+    border-radius: 4px;
+    margin: 5px;
+    display: inline-block;
+    height: 70px;
+    width: 100px;
+    background-color: #ecf0f1;
+    border: 1px solid #999;
+    color: red;
+    font-size: 2.5em;
+    text-align: center;
+    line-height: 70px;
+}
+
+.arithButton{
+    background-color: #bdc3c7; 
+    color: black;
+}
+
+.doubleButton{
+    width: 232px;
+}
+
+#clearButton{
+    background-color: #2ecc71;
+}
+
+#display {
+    width: 505px;
+    resize: none;
+    overflow: hidden;
+    border: 3px solid #ecf0f1;
+    font-size: 60px;
+    height: 60px;
+    background-color: #FFF;
+    color: black;
+    text-align: right;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.calcButton:hover{
+    opacity: .8;
+    cursor: pointer;
+}
+
+.calcButton:active{
+    opacity: .6;
+}
+
+#pushButton{
+    background-color: #f1c40f;
+}

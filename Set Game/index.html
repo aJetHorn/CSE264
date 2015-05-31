@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<!--
+Tim O'Hearn SetGame Project for CSE 264
+Due ???
+Some functionality works, a few bugs
+-->
+<html>
+    <head>
+        <title>SetGame</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">    
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <script src="https://cdn.socket.io/socket.io-1.3.4.js"></script>
+        <script>
+            $(document).ready(function(){
+                //localhost:3000
+                var HOST = "localhost:3000";
+                var SERVER = "http://" + HOST + "/setgameserver";
+                var myId;
+                
+//                var tPlayer = {
+//                    player:"hello",score:"yep",row:true,shuffle:false,end:true
+//                };
+//                var tPlayer2 = {
+//                    player:"hello",score:"yep",row:true,shuffle:false,end:true
+//                }
+//                var testPlayers = [];
+//                testPlayers.push(tPlayer);  
+//                testPlayers.push(tPlayer2);
+                
+                
+                var cardsSelected = 0;
+                var cardID = 1;
+                var selectedCards = [];
+                var images = [];
+                var imageObjects = []
+                populateImagesArray();
+                populateImageObjects(images)
+                //loadGrid([1,2,3,43,1,23,14,80,15,4,4,3]);
+                //loadStatus(testPlayers);
+                
+                
+                function populateImagesArray(){
+                    for (var i = 1; i < 82; i++){
+                        var iTemp = i;
+                        if (iTemp < 10){
+                            iTemp = "0" + i;
+                        }
+                        var image = "images/" + iTemp + ".gif";
+                        images.push(image);
+                    }
+                }
+                
+                //images intended to be links to image urls
+                function populateImageObjects(images){
+                    for (var i = 0; i < images.length; i++){
+                        var imageObject = "<img src=\"" + images[i] + "\">";
+                        imageObjects.push(imageObject);
+                    }
+                }
+                
+                //takes an array of players, displays info in the player table
+                //
+                function loadStatus(players){
+                    var appendString;
+                    for (var i = 0; i < players.length; i++){
+                        var player = players[i];
+                        var rowVal = "";
+                        var shuffleVal = "";
+                        var endVal = "";
+                        if (player.row){
+                            rowVal = "*";
+                        }
+                        if (player.shuffle){
+                            shuffleVal = "*";
+                        }
+                        if (player.end){
+                            endVal = "*";
+                        }
+                        appendString =
+                                "<tr><td>" + player.player + "</td>" +
+                                "<td>" + player.score + "</td>" +
+                                "<td>" + rowVal + "</td>" +
+                                "<td>" + shuffleVal + "</td>" +
+                                "<td>" + endVal + "</td></tr>";
+                        $("#scoreTable").append(appendString);
+                    }
+                }
+                
+                //Cards is an int array, 1-81
+                //assumes imageObjects is populated
+                //assumes imageObjects is populated correctly
+                function loadGrid(cards){
+                    cardsSelected = 0;
+                    $("#setGame").empty();
+                    var appendString;
+                    for (var i = 0; i < cards.length; i++){
+                        if (cards[i] < 1 || cards[i] > 81){
+                            console.log("Invalid int value passed to buildHand");
+                        }
+                        if (i % 3 == 0){
+                            appendString += "<tr>";
+                        }
+                        
+                        appendString += "<td>" + imageObjects[cards[i]] + "</td>";
+                        
+                        if ((i+1) % 3 == 0 || i+1 == cards.length){
+                            appendString += "</tr>";
+                            $("#setGame").append(appendString);
+                            appendString = "";
+                        }
+                    }
+                }
+                function removeBorders(){
+                    $("#setGame td").each(function(){
+                        if ($(this).css("border").indexOf("1px") > -1){
+                        $(this).css("border", "");
+                    }});
+                }
+                
+                $("#setGame").on("click", "td", function(){
+                    //get card number
+                    var imgSrc = $("img", this).attr('src');
+                    var imgNumber = parseInt(imgSrc.split("/")[1].split(".")[0]);
+                        
+                    if ($(this).css("border").indexOf("1px") > -1){
+                        $(this).css("border", "");
+                        cardsSelected--;
+                        selectedCards.splice(selectedCards.indexOf(imgNumber),1);
+                        console.log(selectedCards);
+                    }
+                    else{
+                        if (cardsSelected >= 3){          
+                                alert("You cannot Select more than 3 cards");
+                                return;
+                        }
+                        $(this).css("border", "solid 1px black");
+                        cardsSelected++;
+                        
+                        selectedCards.push(imgNumber);
+                        console.log(selectedCards);
+                    }     
+                    //console.log(cardsSelected);
+                });
+                
+                //provided in directions
+                function nullFcn(result){
+                    
+                }
+                
+                //provided
+                function doAjaxCall(method, cmd, params, fcn) {
+                    $.ajax(
+                            SERVER + "/" + cmd,
+ 			{
+ 				type: method,
+				processData: true,
+				data: params,
+				dataType: "jsonp",
+				success: function (result) {
+ 					fcn(result)
+ 				},
+				error: function (jqXHR, textStatus, errorThrown) {
+					alert("Error: " + jqXHR.responseText);
+					alert("Error: " + textStatus);
+					alert("Error: " + errorThrown);
+ 				}
+ 			}
+                    );
+                }
+                //login, set, add, shuffle, end game
+                
+                $("#login").on("click", function(){
+                    removeBorders();
+                    selectedCards = [];
+                    var name = $("#loginName").val();
+                    
+                    doAjaxCall("GET", 'login', { loginName: name }, function(id){
+                        myId = id;
+                        $("#loggedIn").text(name);
+                        console.log(id);
+                    });
+                    
+                    doAjaxCall("GET", 'loginname', { id: myId }, nullFcn);
+                    
+                });
+                
+                $("#set").on("click", function(){
+                    console.log(myId);
+                    doAjaxCall("GET", "submitset", { id: myId, cards: selectedCards }, nullFcn); 
+                    selectedCards = [];
+                    removeBorders();
+                });
+                
+                //works
+                $("#addRow").on("click", function(){
+                     doAjaxCall("GET", "addrow", { id: myId }, nullFcn); 
+                });
+                
+                //works
+                $("#shuffle").on("click", function(){
+                    doAjaxCall("GET", "shuffle", { id: myId }, nullFcn);
+                });
+                
+                //works
+                $("#endGame").on("click", function(){
+                    doAjaxCall("GET", "endgame", { id: myId }, nullFcn);
+                });
+                
+                var socket = io.connect(HOST);
+                socket.on('hand', function (cards) {
+                    loadGrid(cards);
+                });
+                
+                socket.on('players', function (players) {
+                    loadStatus(players);
+                });
+               
+            });
+            
+        </script>
+
+        <style>
+            #header{
+                padding: 10px;
+            }
+            #setGame{
+                padding: 10px;
+            }
+            #setGame td{
+                padding: 10px;
+            }
+            #setGame td:hover{
+                opacity: .8;
+                cursor: pointer;
+                
+            }
+            #login{
+                padding: 10px;
+            }
+            #commands{
+                padding: 10px;
+            }
+            #scoreTable{
+                background-color: #3498db;
+            }
+            #scoreTable tr{
+                
+            }
+            #scoreTable td{
+                padding: 5px;
+                width: 40px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <div id="header"><h1>Welcome to Set, <span id="loggedIn"> Tim </span></h1></div>
+            <div class="container-fluid">
+                <div class="col-md-6">
+                    <table id="setGame">
+                        
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div id="login">
+                        <span>Login</span>
+                        <div class="loginFields">
+                            <input type="text" name="name" id="loginName" placeholder="name" size="12">
+                            <input type="button" value="Login" />
+                        </div>
+                    </div>
+                    <div id="commands">
+                        <span>Commands</span>
+                        <div class="buttons">
+                            <input type="button" id="set" value="Set" />
+                            <input type="button" id="addRow" value="Add Row" />
+                            <input type="button" id="shuffle" value="Shuffle" />
+                            <input type="button" id="endGame" value="End Game" />
+                        </div>
+                    </div>
+                    <div id="scores">
+                        <table id="scoreTable">
+                            <tr><td><h3>Players</h3></td></tr>
+                            <tr>
+                                <td>Name</td><td>Score</td><td>R</td><td>S</td><td>E</td>
+                            <tr>
+                            <tr>
+                                <td>Tim</td><td>0</td><td>false</td><td>false</td><td>false</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+Tim O'Hearn TJO216 Due 2/23/15
+Calculator models an HP Calculator using pure javascript
+
+Note that I used divs instead of button elements for the calculator's buttons. 
+I planned to fully customize the onclick and hover effects and figured that the
+difference was negligible since nothing was being submitted.
+-->
+<html>
+    <head>
+        <title>HP Calculator</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="app.js" type="text/javascript"></script>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <div id="calculator">
+            <input type="text" name="display" id="display" readonly value="0">
+            <div id="buttons">
+                <div class="calcButton" id="7">7</div>
+                <div class="calcButton" id="8">8</div>
+                <div class="calcButton" id="9">9</div>
+                
+                <div class="calcButton arithButton" id="divisionButton">/</div>
+                
+                <div class="calcButton" id="4">4</div>
+                <div class="calcButton" id="5">5</div>
+                <div class="calcButton" id="6">6</div>
+                
+                <div class="calcButton arithButton" id="multiplicationButton">x</div>
+                
+                <div class="calcButton" id="1">1</div>
+                <div class="calcButton" id="2">2</div>
+                <div class="calcButton" id="3">3</div>
+                
+                <!--Div below is not meant to change signs-->
+                <div class="calcButton arithButton" id="subtractionButton">-</div>
+                
+                <div class="calcButton" id="0">0</div>
+                
+                <div class="calcButton arithButton" id="decimalButton">.</div>
+                <div class="calcButton arithButton" id="flipSignButton">+/-</div>
+                <div class="calcButton arithButton" id="additionButton"> + </div>
+                
+                <!--<div class="calcButton arithButton" id="equalsButton">=</div>-->
+                <div class="calcButton arithButton doubleButton" id="pushButton">Push</div>
+                
+                <div class="calcButton arithButton doubleButton" id="clearButton">Clear</div>
+            </div>
+        </div>
+    </body>
+</html>
