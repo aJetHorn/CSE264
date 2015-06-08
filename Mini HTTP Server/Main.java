@@ -1,7 +1,7 @@
 /* CSE 264 - Fall 2014
  * Homework #1 - Mini HTTP Server
- * Name: Greg Potter
- * Date: 8/27/2014
+ * Name: TJ O'Hearn TJO216
+ * Date: Due 1/28/15
  */
 package edu.lehigh.cse264;
 
@@ -9,12 +9,21 @@ import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 
 public class Main {
     // The port can be any small integer that isn't being used by another program
-    private static final int port = 8567;
-
+    private static final int port = 8568; //8567
+    //http://localhost:8568/mywebapp/index.html
+    public static String IP; //sorry, this is sloppy
+    
     public static void main(String[] args) {
         try {
             System.out.println("Mini HTTP Server Starting Up");
@@ -26,8 +35,9 @@ public class Main {
                 // accept it when it does. Return a reference to the socket 
                 // that will be used to communicate with the client.
                 Socket newSocket = s.accept();
-                System.out.println("New connection from: " + ((InetSocketAddress)newSocket.getRemoteSocketAddress()).getAddress().getHostAddress());
-                
+                //Grab this, for IP address
+                IP = ((InetSocketAddress)newSocket.getRemoteSocketAddress()).getAddress().getHostAddress();
+                System.out.println("New connection from: " + IP);
                 // Create a new handler object to handle the requests of the 
                 // client that just connected.
                 ClientHandler handler = new ClientHandler(newSocket);
@@ -45,25 +55,15 @@ public class Main {
 class ClientHandler implements Runnable {
     // Socket used to handle the client requests.
     private Socket socket;
+    public int responseCode;
     
-    // SimpleDateFormat for formatting the last-modified header
-    private final SimpleDateFormat LAST_MODIFIED_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
-    
-    private final String LOG_FILE = "server.log";
-    
-    private FileOutputStream logStream;
-
     public ClientHandler(Socket s) {
         this.socket = s;
-        try {
-            logStream = new FileOutputStream(new File(LOG_FILE), true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
     public void run() {
+        
         try {
             BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             DataOutputStream response = new DataOutputStream(socket.getOutputStream());
@@ -89,9 +89,10 @@ class ClientHandler implements Runnable {
                     // Dump the entire request to the console for debugging
                     dumpRequest(firstLine, headers);
                     
+                    
                     // Process the request based on the method used (GET is the only
                     // one we're implementing for now
-                    int responseCode = 0;
+                    responseCode = 0;
                     switch (method) {
                         case "GET":
                             responseCode = processGET(resource, headers, response);
@@ -117,9 +118,8 @@ class ClientHandler implements Runnable {
                         default:
                             System.err.println("Unknown method: " + method);
                             break;
-                    }              
-                    // Log the request to a file
-                    logRequest(socket.getInetAddress().getHostAddress(), responseCode, firstLine);
+                    }
+                    logRequest(Main.IP, firstLine);
                 }
             } catch (Exception e) {
                // If we get an i/o error, tell the user that the resource is unavailable
@@ -135,6 +135,7 @@ class ClientHandler implements Runnable {
 
     // Write out the request header lines to the console
     private void dumpRequest(String firstLine, List<String> headers) {
+        //grab this
         System.out.println(firstLine);
         for (String headerLine : headers) {
             System.out.println(headerLine);
@@ -142,18 +143,68 @@ class ClientHandler implements Runnable {
         System.out.println();
     }
     
-    // For a given client address, responsecode, and first line, log the
-    // request to the log file
-    private void logRequest(String ipAddress, int responseCode, String firstLine) {
-        if (logStream != null) {
-            try {
-               logStream.write(String.format("%s - \"%s\" %d\n", ipAddress, firstLine, responseCode).getBytes());
-               logStream.flush();
-               logStream.close();
-            } catch (IOException e) {
-               e.printStackTrace();
-            }   
+    //logs request to access.log
+    private void logRequest(String IP, String header){
+        try{
+            String requestedFileName = header.split(" ")[1];
+            //System.out.println(requestedFileName);
+            String fileExtension = requestedFileName.substring(requestedFileName.lastIndexOf(".") + 1);
+            String contentType = getContentType(fileExtension);
+            
+            //File requestedFile = new File(requestedFileName.substring(1));
+            String lastModified = getFileLastModified(requestedFileName);
+            //System.out.println(lastModified);
+            File file = new File("access.log");
+            FileWriter fw = new FileWriter(file,true); //appends   
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(IP + " " + header + " " + responseCode + "\n\t" +
+                    contentType + "\n\t" + lastModified + "\n");
+            bw.close();
         }
+        catch(IOException e){
+            System.out.println("Error with File I/O");
+            e.printStackTrace();
+        }
+    }
+    
+    private String getFileLastModified(String fileName){
+        File requestedFile = new File(fileName.substring(1)); //assumes starting slash
+        long lastModified = requestedFile.lastModified();
+        
+        Date date = new Date(lastModified);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy hh:mm:ss z");
+        String dateText = dateFormat.format(date);
+        
+        return "Last Modified: " + dateText;
+    }
+    
+    private String getContentType(String fileExtension){
+        String contentType = "Content-Type: ";
+        switch (fileExtension){
+            case ("gif"):
+                contentType += "image/gif";
+                break;
+            case ("jpeg"):
+                contentType += "image/jpeg";
+                break;
+            case ("png"):
+                contentType += "image/png";
+                break;
+            case ("pdf"):
+                contentType += "application/pdf";
+                break;
+            case ("xls"):
+            case ("xlsx"):
+                contentType += "application/vnd.ms-excel";
+                break;
+            case ("htm"):
+            case ("html"):
+                contentType += "text/html";
+                break;
+            default:
+                contentType += "Not Recognized";
+        }
+        return contentType;
     }
 
     private int processGET(String resource, List<String> headers, DataOutputStream out) {
@@ -166,11 +217,8 @@ class ClientHandler implements Runnable {
 
             // Create file path from requested resource compatable with the host OS
             String path = ("." + resource).replace('/', File.separatorChar);
-            File file = new File(path);
-            int length = (int) file.length();
+            int length = (int) new File(path).length();
             byte[] b = new byte[length];
-            
-            String lastModified = LAST_MODIFIED_FORMAT.format(file.lastModified());
 
             // Read the requested resource into an array of bytes
             FileInputStream resourceStream;
@@ -181,17 +229,12 @@ class ClientHandler implements Runnable {
                 out.writeBytes("HTTP/1.1 404 ERROR\n\n");
                 return 404;
             }
-            
-            // Determine the content-type
-            String contentType = determineContentType(resource);
 
             // Write HTTP response line to client
             out.writeBytes("HTTP/1.1 200 OK\n");
             
             // Write out the headers
             out.writeBytes("Content-Length:" + length + "\n");
-            out.writeBytes("Content-Type:" + contentType + "\n");
-            out.writeBytes("Last-Modified:" + lastModified + "\n");
             out.writeBytes("Connection: close\n");
             
             // Blank line ends the header section
@@ -211,30 +254,5 @@ class ClientHandler implements Runnable {
                 return 500;
             }
         }
-    }
-    
-    private String determineContentType(final String resource) {
-        int lastPeriodIndex = resource.lastIndexOf(".");
-        if (lastPeriodIndex > 0) {
-            String extension = resource.substring(lastPeriodIndex + 1);
-            switch (extension) {
-                case "gif":
-                    return "image/gif";
-                case "jpg":
-                case "jpeg":
-                    return "image/jpeg";
-                case "png":
-                    return "image/png";
-                case "pdf":
-                    return "application/pdf";
-                case "xls":
-                case "xlsx":
-                    return "application/vnd.ms-excel";
-                case "htm":
-                case "html":
-                    return "text/html";
-            }
-        }
-        return "text/plain"; // default to text/plain
     }
 }
